@@ -43,3 +43,28 @@ House *load_houses(const char *map_name, int *count) {
   fclose(f);
   return head;
 }
+//places.txt
+Place* load_places(const char* map_name, int *count) {
+    char path[100];
+    sprintf(path, "maps/%s/places.txt", map_name);
+    FILE *f = fopen(path, "r");
+    if (!f) return NULL;
+    Place *head = NULL, *curr = NULL;
+    char line[256];
+    *count = 0;
+    while (fgets(line, sizeof(line), f)) {
+        Place *new_p = malloc(sizeof(Place));
+        char *token = strtok(line, "|");
+        strcpy(new_p->name, token);
+        new_p->pos.lat = atof(strtok(NULL, "|"));
+        new_p->pos.lon = atof(strtok(NULL, "|"));
+        new_p->next = NULL;
+
+        if (!head) head = new_p;
+        else curr->next = new_p;
+        curr = new_p;
+        (*count)++;
+    }
+    fclose(f);
+    return head;
+}
