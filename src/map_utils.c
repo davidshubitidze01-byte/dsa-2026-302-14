@@ -43,28 +43,62 @@ House *load_houses(const char *map_name, int *count) {
   fclose(f);
   return head;
 }
-//places.txt
-Place* load_places(const char* map_name, int *count) {
-    char path[100];
-    sprintf(path, "maps/%s/places.txt", map_name);
-    FILE *f = fopen(path, "r");
-    if (!f) return NULL;
-    Place *head = NULL, *curr = NULL;
-    char line[256];
-    *count = 0;
-    while (fgets(line, sizeof(line), f)) {
-        Place *new_p = malloc(sizeof(Place));
-        char *token = strtok(line, "|");
-        strcpy(new_p->name, token);
-        new_p->pos.lat = atof(strtok(NULL, "|"));
-        new_p->pos.lon = atof(strtok(NULL, "|"));
-        new_p->next = NULL;
+// places.txt
+Place *load_places(const char *map_name, int *count) {
+  char path[100];
+  sprintf(path, "maps/%s/places.txt", map_name);
+  FILE *f = fopen(path, "r");
+  if (!f)
+    return NULL;
+  Place *head = NULL, *curr = NULL;
+  char line[256];
+  *count = 0;
+  while (fgets(line, sizeof(line), f)) {
+    Place *new_p = malloc(sizeof(Place));
+    char *token = strtok(line, "|");
+    strcpy(new_p->name, token);
+    new_p->pos.lat = atof(strtok(NULL, "|"));
+    new_p->pos.lon = atof(strtok(NULL, "|"));
+    new_p->next = NULL;
 
-        if (!head) head = new_p;
-        else curr->next = new_p;
-        curr = new_p;
-        (*count)++;
+    if (!head)
+      head = new_p;
+    else
+      curr->next = new_p;
+    curr = new_p;
+    (*count)++;
+  }
+  fclose(f);
+  return head;
+}
+//Abreviaturas (C. = Carrer)
+int match_street(const char *input, const char *database) {
+    char temp_in[100], temp_db[100];
+    strcpy(temp_in, input);
+    strcpy(temp_db, database);
+    if (strncasecmp(temp_in, "C. ", 3) == 0 && strncasecmp(temp_db, "Carrer ", 7) == 0) {
+        return strcasecompare(temp_in + 3, temp_db + 7);
     }
-    fclose(f);
-    return head;
+    return strcasecompare(temp_in, temp_db);
+}
+
+//Búsqueda secuencial
+House* find_house(House *head, char *street, int number) {
+    House *curr = head;
+    while (curr) {
+        if (match_street(street, curr->street) && curr->number == number) {
+            return curr;
+        }
+        curr = curr->next;
+    }
+    return NULL;
+}
+//Búsqueda de lugares
+Place* find_place(Place *head, char *name) {
+    Place *curr = head;
+    while (curr) {
+        if (strcasecompare(name, curr->name)) return curr;
+        curr = curr->next;
+    }
+    return NULL;
 }
