@@ -20,13 +20,17 @@ House *load_houses(const char *map_name, int *count) {
     char path[100];
     sprintf(path, "maps/%s/houses.txt", map_name);
     FILE *f = fopen(path, "r");
-    if (!f) return NULL;
+    if (!f) {
+        printf("Can't open: %s\n", path);
+        return NULL;
+    }
 
     House *head = NULL, *curr = NULL;
-    char line[256];
+    char line[512];
     *count = 0;
     while (fgets(line, sizeof(line), f)) {
         House *new_h = malloc(sizeof(House)); //Pedimos memoria para un nuevo nodo
+        new_h->next = NULL;
         char *token = strtok(line, ",");
         if (!token) { free(new_h); continue; }
         strcpy(new_h->street, token);
@@ -49,19 +53,26 @@ Place *load_places(const char *map_name, int *count) {
     char path[100];
     sprintf(path, "maps/%s/places.txt", map_name);
     FILE *f = fopen(path, "r");
-    if (!f) return NULL;
+    if (!f) {
+        printf("Can't open: %s\n", path);
+        return NULL;
+    }
 
     Place *head = NULL, *curr = NULL;
-    char line[256];
+    char line[512];
     *count = 0;
     while (fgets(line, sizeof(line), f)) {
         Place *new_p = malloc(sizeof(Place));
-        char *token = strtok(line, "|");
+        new_p->next = NULL; // CRUCIAL
+        char *token = strtok(line, ",");
+        if (!token) { free(new_p); continue; }
         strcpy(new_p->name, token);
-        new_p->pos.lat = atof(strtok(NULL, "|"));
-        new_p->pos.lon = atof(strtok(NULL, "|"));
-        new_p->next = NULL;
-
+        token = strtok(NULL, ",");
+        if (!token) { free(new_p); continue; }
+        new_p->pos.lat = atof(token);
+        token = strtok(NULL, ",");
+        if (!token) { free(new_p); continue; }
+        new_p->pos.lon = atof(token);
         if (!head) head = new_p;
         else curr->next = new_p;
         curr = new_p;
@@ -120,6 +131,7 @@ int* get_valid_numbers(House *head, const char *street, int *total) {
 }
 
 int levenshtein(const char *a, const char *b) {
+    if (!a || !b) return 999;
     int m = strlen(a);
     int n = strlen(b);
     int D[m + 1][n + 1];
@@ -127,7 +139,7 @@ int levenshtein(const char *a, const char *b) {
     for (int j = 0; j <= n; j++) D[0][j] = j;
     for (int i = 1; i <= m; i++) {
         for (int j = 1; j <= n; j++) {
-            int cost = (a[i - 1] == b[j - 1]) ? 0 : 1;
+            int cost = (tolower((unsigned char)a[i - 1]) == tolower((unsigned char)b[j - 1])) ? 0 : 1;
             int del = D[i - 1][j] + 1;
             int ins = D[i][j - 1] + 1;
             int sub = D[i - 1][j - 1] + cost;
