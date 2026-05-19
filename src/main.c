@@ -1,17 +1,16 @@
-#include "map_structs.h"
-#include "map_utils.h"
 #include <dirent.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <string.h>
+#include "map_utils.h"
 
 int main() {
     char map_name[50];
     printf("Enter map name: ");
     scanf("%s", map_name);
     int h_cnt, p_cnt;
-    // Cargamos los datos de los ficheros a las listas enlazadas
+    //Cargamos los datos de los ficheros a las listas enlazadas
     House *houses = load_houses(map_name, &h_cnt);
     Place *places = load_places(map_name, &p_cnt);
     printf("%d houses loaded. %d places loaded. \n", h_cnt, p_cnt);
@@ -61,7 +60,6 @@ int main() {
         printf("Enter place name: ");
         fgets(p_name, 100, stdin);
         p_name[strcspn(p_name, "\n")] = 0;
-
         Place *p = find_place(places, p_name);
         if (p) {
             printf("\nFound at (%f, %f)\n", p->pos.lat, p->pos.lon);

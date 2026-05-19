@@ -1,8 +1,9 @@
-#include "map_structs.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "map_structs.h"
+#include "map_utils.h"
 
 // Compara dos cadenas ignorando mayusculas y minúsculas
 int strcasecompare(const char *s1, const char *s2) {
@@ -10,6 +11,8 @@ int strcasecompare(const char *s1, const char *s2) {
     return 0;
   return strcasecmp(s1, s2) == 0; // Retorna 1 si són iguals
 }
+
+//Borramos trim() porque no nos iba de ninguna forma.
 
 // Carga de houses.txt
 House *load_houses(const char *map_name, int *count) {
@@ -33,7 +36,6 @@ House *load_houses(const char *map_name, int *count) {
       free(new_h);
       continue;
     }
-    trim(token);
     strcpy(new_h->street, token);
     new_h->number = atoi(strtok(NULL, ","));
     new_h->pos.lat = atof(strtok(NULL, ","));
@@ -49,18 +51,6 @@ House *load_houses(const char *map_name, int *count) {
   }
   fclose(f);
   return head;
-}
-
-// Elimina espacios en blanco al inicio y final de una cadena para facilitart la
-// búsqueda de sitios
-void trim(char *s) {
-  char *p = s;
-  int l = strlen(p);
-  while (isspace(p[l - 1]))
-    p[--l] = 0;
-  while (*p && isspace(*p))
-    ++p, --l;
-  memmove(s, p, l + 1);
 }
 
 // places.txt
@@ -87,7 +77,6 @@ Place *load_places(const char *map_name, int *count) {
       free(new_p);
       continue;
     }
-    trim(token);
     strncpy(new_p->name, token, 99);
     new_p->name[99] = '\0';
     token = strtok(NULL, ",");

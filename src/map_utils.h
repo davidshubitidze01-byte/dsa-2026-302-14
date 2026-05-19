@@ -3,6 +3,7 @@
 #include "map_structs.h"
 
 int strcasecompare(const char *s1, const char *s2);
+int match_street(const char *input, const char *database);
 House *load_houses(const char *map_name, int *count);
 Place *load_places(const char *map_name, int *count);
 House *find_house(House *head, char *street, int number);
