@@ -33,6 +33,7 @@ House *load_houses(const char *map_name, int *count) {
       free(new_h);
       continue;
     }
+    trim(token);
     strcpy(new_h->street, token);
     new_h->number = atoi(strtok(NULL, ","));
     new_h->pos.lat = atof(strtok(NULL, ","));
@@ -86,6 +87,7 @@ Place *load_places(const char *map_name, int *count) {
       free(new_p);
       continue;
     }
+    trim(token);
     strncpy(new_p->name, token, 99);
     new_p->name[99] = '\0';
     token = strtok(NULL, ",");
