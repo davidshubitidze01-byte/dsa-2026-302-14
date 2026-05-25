@@ -225,3 +225,82 @@ int levenshtein(const char *a, const char *b) {
   }
   return D[m][n];
 }
+//Funcions matemàtiques del Lab4
+double toRadians(double degree) { 
+  return degree * (M_PI / 180.0); 
+}
+double toDegrees(double radians) { 
+  return radians * (180.0 / M_PI); 
+}
+
+double haversine(Position posA, Position posB) {
+  double lat1 = toRadians(posA.lat);
+  double lon1 = toRadians(posA.lon);
+  double lat2 = toRadians(posB.lat);
+  double lon2 = toRadians(posB.lon);
+  double dLat = lat2 - lat1;
+  double dLon = lon2 - lon1;
+  double a = pow(sin(dLat / 2), 2) + cos(lat1) * cos(lat2) * pow(sin(dLon / 2), 2);
+  double c = 2 * atan2(sqrt(a), sqrt(1 - a));
+  return EARTH_RADIUS * c * 1000.0; // Multiplicamos por 1000 para obtener metros
+}
+
+Position midpoint(Position a, Position b) {
+  double lat1 = toRadians(a.lat);
+  double lon1 = toRadians(a.lon);
+  double lat2 = toRadians(b.lat);
+  double lon2 = toRadians(b.lon);
+  double x1 = cos(lat1) * cos(lon1);
+  double y1 = cos(lat1) * sin(lon1);
+  double z1 = sin(lat1);
+  double x2 = cos(lat2) * cos(lon2);
+  double y2 = cos(lat2) * sin(lon2);
+  double z2 = sin(lat2);
+  double x = (x1 + x2) / 2.0;
+  double y = (y1 + y2) / 2.0;
+  double z = (z1 + z2) / 2.0;
+  double lon = atan2(y, x);
+  double hyp = sqrt(x * x + y * y);
+  double lat = atan2(z, hyp);
+  Position mid;
+  mid.lat = toDegrees(lat);
+  mid.lon = toDegrees(lon);
+  return mid;
+}
+
+//Troba el tram de carrer més proper a l'usuari usant MIDPOINT
+Street *find_closest_street(Street *head, Position user_pos) {
+  Street *curr = head;
+  Street *best_street = NULL;
+  double min_dist = 99999999.0;
+  
+  while (curr) {
+    Position mid = midpoint(curr->from_pos, curr->to_pos);
+    double dist = haversine(user_pos, mid);
+    if (dist < min_dist) {
+      min_dist = dist;
+      best_street = curr;
+    }
+    curr = curr->next;
+  }
+  return best_street;
+}
+void print_connected_streets(Street *head, Street *closest) {
+  if (!closest) return;
+  printf("Closest street: %s\n", closest->name);
+  printf("Between %llu (%f, %f) and %llu (%f, %f)\n", closest->from_id, closest->from_pos.lat, closest->from_pos.lon, closest->to_id, closest->to_pos.lat, closest->to_pos.lon);
+  printf("Connections:\n");
+  Street *curr = head;
+  int found = 0;
+  
+  while (curr) {
+    if (curr->from_id == closest->to_id) {
+      printf(" - %s\n", curr->name);
+      found = 1;
+    }
+    curr = curr->next;
+  }  
+  if (!found) {
+    printf(" - None\n");
+  }
+}
