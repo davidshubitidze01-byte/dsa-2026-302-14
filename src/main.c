@@ -9,15 +9,21 @@ int main() {
     char map_name[50];
     printf("Enter map name: ");
     scanf("%s", map_name);
-    int h_cnt, p_cnt;
+    int h_cnt, p_cnt, s_cnt;
     //Cargamos los datos de los ficheros a las listas enlazadas
     House *houses = load_houses(map_name, &h_cnt);
     Place *places = load_places(map_name, &p_cnt);
-    printf("%d houses loaded. %d places loaded. \n", h_cnt, p_cnt);
+    Street *streets = load_streets(map_name, &s_cnt);
+
+    printf("%d houses loaded. %d places loaded. %d streets loaded.\n", h_cnt, p_cnt, s_cnt);
     printf("\n ORIGIN \n Where are you? Address (1), Place (2), Coordinate (3)? ");
     int opt;
     scanf("%d", &opt);
     getchar();
+
+    Position origin_pos;
+    int valid_origin = 0;
+
     if (opt == 1) { //Busqueda por dirección
         char street[100];
         int num;
@@ -29,6 +35,8 @@ int main() {
         House *h = find_house(houses, street, num);
         if (h) {
             printf("\nFound at (%f, %f)\n", h->pos.lat, h->pos.lon);
+            origin_pos = h->pos;
+            valid_origin = 1;
         } else {
             //Si no existe la dirección, buscamos si la calle es válida pero el número no
             int total_nums = 0;
@@ -39,7 +47,11 @@ int main() {
                 printf("\nEnter a valid number: ");
                 scanf("%d", &num);
                 h = find_house(houses, street, num);
-                if (h) printf("Found at (%f, %f)\n", h->pos.lat, h->pos.lon);
+                if (h) {
+                    printf("Found at (%f, %f)\n", h->pos.lat, h->pos.lon);
+                    origin_pos = h->pos;
+                    valid_origin = 1;
+                }
             } else {
                 //Si la calle no existe, sugerimos la más parecida usando levenshtein
                 printf("Street not found. Did you mean?: ");
@@ -63,13 +75,22 @@ int main() {
         Place *p = find_place(places, p_name);
         if (p) {
             printf("\nFound at (%f, %f)\n", p->pos.lat, p->pos.lon);
+            origin_pos = p->pos;
+            valid_origin = 1;
         } else {
             printf("Place not found.\n");
         }
 
     } else if (opt == 3) { //Coordenadas
-        printf("Not implemented yet.\n");
+        printf("Enter latitude and longitude (e.g. 41.4037 2.1934): ");
+        scanf("%lf %lf", &origin_pos.lat, &origin_pos.lon);
+        valid_origin = 1;
     }
-
+    if (valid_origin && streets) {
+        Street *closest = find_closest_street(streets, origin_pos);
+        if (closest) {
+            print_connected_streets(streets, closest);
+        }
+    }
     return 0;
 }

@@ -6,6 +6,7 @@ int strcasecompare(const char *s1, const char *s2);
 int match_street(const char *input, const char *database);
 House *load_houses(const char *map_name, int *count);
 Place *load_places(const char *map_name, int *count);
+Street *load_streets(const char *map_name, int *count);
 House *find_house(House *head, char *street, int number);
 Place *find_place(Place *head, char *name);
 int *get_valid_numbers(House *head, const char *street, int *total);

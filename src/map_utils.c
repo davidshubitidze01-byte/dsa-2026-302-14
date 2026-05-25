@@ -1,7 +1,8 @@
-#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
+#include <math.h>
 #include "map_structs.h"
 #include "map_utils.h"
 #define EARTH_RADIUS 6371.0
