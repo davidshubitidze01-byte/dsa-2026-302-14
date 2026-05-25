@@ -21,4 +21,13 @@ typedef struct Place {
   Position pos; //Coordenadas
   struct Place *next; //Puntero al siguiente nodo
 } Place;
+typedef struct Street {
+  unsigned long long from_id; 
+  Position from_pos;          
+  unsigned long long to_id;   
+  Position to_pos;            
+  double length;              
+  char name[100];            
+  struct Street *next;        
+} Street;
 #endif
