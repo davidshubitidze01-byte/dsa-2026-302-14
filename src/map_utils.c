@@ -4,6 +4,10 @@
 #include <string.h>
 #include "map_structs.h"
 #include "map_utils.h"
+#define EARTH_RADIUS 6371.0
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
 // Compara dos cadenas ignorando mayusculas y minúsculas
 int strcasecompare(const char *s1, const char *s2) {
@@ -91,6 +95,53 @@ Place *load_places(const char *map_name, int *count) {
     else
       curr->next = new_p;
     curr = new_p;
+    (*count)++;
+  }
+  fclose(f);
+  return head;
+}
+//. streets.txt
+Street *load_streets(const char *map_name, int *count) {
+  char path[100];
+  sprintf(path, "maps/%s/streets.txt", map_name);
+  FILE *f = fopen(path, "r");
+  if (!f) {
+    printf("Can't open: %s\n", path);
+    return NULL;
+  }
+  Street *head = NULL, *curr = NULL;
+  char line[512];
+  *count = 0;
+
+  while (fgets(line, sizeof(line), f)) {
+    line[strcspn(line, "\r\n")] = 0;
+    if (strlen(line) < 5)
+      continue;
+      
+    Street *new_s = malloc(sizeof(Street));
+    new_s->next = NULL;
+  
+    char *token = strtok(line, ",");
+    sscanf(token, "%llu", &new_s->from_id);
+    new_s->from_pos.lat = atof(strtok(NULL, ","));
+    new_s->from_pos.lon = atof(strtok(NULL, ","));
+    token = strtok(NULL, ",");
+    sscanf(token, "%llu", &new_s->to_id);
+    new_s->to_pos.lat = atof(strtok(NULL, ","));
+    new_s->to_pos.lon = atof(strtok(NULL, ","));
+    new_s->length = atof(strtok(NULL, ","));
+    char *name_token = strtok(NULL, ",");
+    if (name_token) {
+      strncpy(new_s->name, name_token, 99);
+      new_s->name[99] = '\0';
+    } else {
+      strcpy(new_s->name, "Unknown Street");
+    }
+    if (!head)
+      head = new_s;
+    else
+      curr->next = new_s;
+    curr = new_s;
     (*count)++;
   }
   fclose(f);
