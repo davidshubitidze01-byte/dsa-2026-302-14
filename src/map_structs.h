@@ -21,7 +21,8 @@ typedef struct Place {
   Position pos; //Coordenadas
   struct Place *next; //Puntero al siguiente nodo
 } Place;
-typedef struct Street {
+
+typedef struct Street {//Nodo de linked list para segmentos de calles
   unsigned long long from_id; 
   Position from_pos;          
   unsigned long long to_id;   
@@ -30,4 +31,22 @@ typedef struct Street {
   char name[100];            
   struct Street *next;        
 } Street;
+
+typedef struct AdjNode {//Nodo para calles que salen de X intersecciñn
+  Street *street;
+  struct AdjNode *next;
+} AdjNode;
+
+//Entrada de la hash table
+typedef struct HashEntry {
+  unsigned long long id;//Key
+  AdjNode *head; //Valye
+  struct HashEntry *next;
+} HashEntry;
+
+//Estructura de la hash table
+typedef struct {
+  HashEntry **buckets;
+  int size;
+} IntersectionMap;
 #endif

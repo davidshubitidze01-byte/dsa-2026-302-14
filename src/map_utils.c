@@ -286,7 +286,7 @@ Street *find_closest_street(Street *head, Position user_pos) {
   }
   return best_street;
 }
-void print_connected_streets(Street *head, Street *closest) {
+void print_connected_streets(Street *head, Street *closest) {//Busqueda lineal para calles conectadas(lab4)
   if (!closest) return;
   printf("Closest street: %s\n", closest->name);
   printf("Between %llu (%f, %f) and %llu (%f, %f)\n", closest->from_id, closest->from_pos.lat, closest->from_pos.lon, closest->to_id, closest->to_pos.lat, closest->to_pos.lon);
