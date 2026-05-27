@@ -352,6 +352,16 @@ void insert_hash_map(IntersectionMap *map, Street *street) {
   curr_entry->head = new_adj;
 }
 
+IntersectionMap *build_intersection_graph(Street *streets_head, int table_size) {
+  IntersectionMap *map = create_hash_map(table_size);
+  Street *curr = streets_head;
+  while (curr) {
+    insert_hash_map(map, curr);
+    curr = curr->next;
+  }
+  return map;
+}
+
 void print_connected_streets_hash(IntersectionMap *map, Street *closest) {//Busqueda de conexions mes eficient ¡(O(1))!
   if (!closest || !map) return;
   printf("Closest street: %s\n", closest->name);
