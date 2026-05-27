@@ -49,4 +49,5 @@ typedef struct {
   HashEntry **buckets;
   int size;
 } IntersectionMap;
+
 #endif
