@@ -305,3 +305,49 @@ void print_connected_streets(Street *head, Street *closest) {//Busqueda lineal p
     printf(" - None\n");
   }
 }
+
+
+IntersectionMap *create_hash_map(int size) {
+  IntersectionMap *map = malloc(sizeof(IntersectionMap));
+  map->size = size;
+  map->buckets = malloc(sizeof(HashEntry*) * size);
+  for (int i = 0; i < size; i++) {
+    map->buckets[i] = NULL;
+  }
+  return map;
+}
+
+int hash_function(unsigned long long id, int table_size) {
+  return (int)(id % table_size);
+}
+
+void insert_hash_map(IntersectionMap *map, Street *street) {
+  if (!street) return;
+  unsigned long long key = street->from_id;
+  int index = hash_function(key, map->size);
+  
+  //Buscamos si la key ya existe en ese bucket
+  HashEntry *curr_entry = map->buckets[index];
+  while (curr_entry) {
+    if (curr_entry->id == key) {
+      break;
+    }
+    curr_entry = curr_entry->next;
+  }
+  
+  //Si no existe la intersección en la tabla, creamos su entrada
+  if (!curr_entry) {
+    curr_entry = malloc(sizeof(HashEntry));
+    curr_entry->id = key;
+    curr_entry->head = NULL;
+    curr_entry->next = map->buckets[index];
+    map->buckets[index] = curr_entry;
+  }
+  
+  //Añadimos la calle a la lista de adyacencia de esta intersección
+  AdjNode *new_adj = malloc(sizeof(AdjNode));
+  new_adj->street = street;
+  new_adj->next = curr_entry->head; 
+
+  curr_entry->head = new_adj;
+}

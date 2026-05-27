@@ -15,4 +15,10 @@ double haversine(Position posA, Position posB);
 Position midpoint(Position a, Position b);
 Street *find_closest_street(Street *head, Position user_pos);
 void print_connected_streets(Street *head, Street *closest);
+IntersectionMap *create_hash_map(int size);
+int hash_function(unsigned long long id, int table_size);
+void insert_hash_map(IntersectionMap *map, Street *street);
+IntersectionMap *build_intersection_graph(Street *streets_head, int table_size);
+void print_connected_streets_hash(IntersectionMap *map, Street *closest);
+void free_hash_map(IntersectionMap *map);
 #endif
