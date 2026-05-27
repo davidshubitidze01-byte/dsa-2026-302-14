@@ -286,7 +286,7 @@ Street *find_closest_street(Street *head, Position user_pos) {
   }
   return best_street;
 }
-void print_connected_streets(Street *head, Street *closest) {//Busqueda lineal para calles conectadas(lab4)
+void print_connected_streets(Street *head, Street *closest) {//Busqueda lineal para calles conectadas(lab4) ¡(0(N))!
   if (!closest) return;
   printf("Closest street: %s\n", closest->name);
   printf("Between %llu (%f, %f) and %llu (%f, %f)\n", closest->from_id, closest->from_pos.lat, closest->from_pos.lon, closest->to_id, closest->to_pos.lat, closest->to_pos.lon);
@@ -350,4 +350,51 @@ void insert_hash_map(IntersectionMap *map, Street *street) {
   new_adj->next = curr_entry->head; 
 
   curr_entry->head = new_adj;
+}
+
+void print_connected_streets_hash(IntersectionMap *map, Street *closest) {//Busqueda de conexions mes eficient ¡(O(1))!
+  if (!closest || !map) return;
+  printf("Closest street: %s\n", closest->name);
+  printf("Between %llu (%f, %f) and %llu (%f, %f)\n", closest->from_id, closest->from_pos.lat, closest->from_pos.lon, closest->to_id, closest->to_pos.lat, closest->to_pos.lon);
+  printf("Connections (Fast Hash):\n");
+  unsigned long long key = closest->to_id;
+  int index = hash_function(key, map->size);
+  HashEntry *entry = map->buckets[index];
+  while (entry) {
+    if (entry->id == key) {
+      break;
+    }
+    entry = entry->next;
+  }
+  if (entry && entry->head) {
+    AdjNode *curr_adj = entry->head;
+    while (curr_adj) {
+      printf(" - %s\n", curr_adj->street->name);
+      curr_adj = curr_adj->next;
+    }
+  } else {
+    printf(" - None\n");
+  }
+}
+
+
+//Allibera la memoria ocupada pel hash map
+void free_hash_map(IntersectionMap *map) {
+  if (!map) return;
+  for (int i = 0; i < map->size; i++) {
+    HashEntry *entry = map->buckets[i];
+    while (entry) {
+      HashEntry *temporary_entry = entry;
+      AdjNode *adj = entry->head;
+      while (adj) {
+        AdjNode *temporary_adj = adj;
+        adj = adj->next;
+        free(temporary_adj);
+      }
+      entry = entry->next;
+      free(temporary_entry);
+    }
+  }
+  free(map->buckets);
+  free(map);
 }
