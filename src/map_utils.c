@@ -1,10 +1,10 @@
+#include "map_utils.h"
+#include "map_structs.h"
+#include <ctype.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
-#include <math.h>
-#include "map_structs.h"
-#include "map_utils.h"
 #define EARTH_RADIUS 6371.0
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -17,7 +17,7 @@ int strcasecompare(const char *s1, const char *s2) {
   return strcasecmp(s1, s2) == 0; // Retorna 1 si són iguals
 }
 
-//Borramos trim() porque no nos iba de ninguna forma.
+// Borramos trim() porque no nos iba de ninguna forma.
 
 // Carga de houses.txt
 House *load_houses(const char *map_name, int *count) {
@@ -118,10 +118,10 @@ Street *load_streets(const char *map_name, int *count) {
     line[strcspn(line, "\r\n")] = 0;
     if (strlen(line) < 5)
       continue;
-      
+
     Street *new_s = malloc(sizeof(Street));
     new_s->next = NULL;
-  
+
     char *token = strtok(line, ",");
     sscanf(token, "%llu", &new_s->from_id);
     new_s->from_pos.lat = atof(strtok(NULL, ","));
@@ -226,13 +226,9 @@ int levenshtein(const char *a, const char *b) {
   }
   return D[m][n];
 }
-//Funcions matemàtiques del Lab4
-double toRadians(double degree) { 
-  return degree * (M_PI / 180.0); 
-}
-double toDegrees(double radians) { 
-  return radians * (180.0 / M_PI); 
-}
+// Funcions matemàtiques del Lab4
+double toRadians(double degree) { return degree * (M_PI / 180.0); }
+double toDegrees(double radians) { return radians * (180.0 / M_PI); }
 
 double haversine(Position posA, Position posB) {
   double lat1 = toRadians(posA.lat);
@@ -241,9 +237,11 @@ double haversine(Position posA, Position posB) {
   double lon2 = toRadians(posB.lon);
   double dLat = lat2 - lat1;
   double dLon = lon2 - lon1;
-  double a = pow(sin(dLat / 2), 2) + cos(lat1) * cos(lat2) * pow(sin(dLon / 2), 2);
+  double a =
+      pow(sin(dLat / 2), 2) + cos(lat1) * cos(lat2) * pow(sin(dLon / 2), 2);
   double c = 2 * atan2(sqrt(a), sqrt(1 - a));
-  return EARTH_RADIUS * c * 1000.0; // Multiplicamos por 1000 para obtener metros
+  return EARTH_RADIUS * c *
+         1000.0; // Multiplicamos por 1000 para obtener metros
 }
 
 Position midpoint(Position a, Position b) {
@@ -269,12 +267,12 @@ Position midpoint(Position a, Position b) {
   return mid;
 }
 
-//Troba el tram de carrer més proper a l'usuari usant MIDPOINT
+// Troba el tram de carrer més proper a l'usuari usant MIDPOINT
 Street *find_closest_street(Street *head, Position user_pos) {
   Street *curr = head;
   Street *best_street = NULL;
   double min_dist = 99999999.0;
-  
+
   while (curr) {
     Position mid = midpoint(curr->from_pos, curr->to_pos);
     double dist = haversine(user_pos, mid);
@@ -286,31 +284,35 @@ Street *find_closest_street(Street *head, Position user_pos) {
   }
   return best_street;
 }
-void print_connected_streets(Street *head, Street *closest) {//Busqueda lineal para calles conectadas(lab4) ¡(0(N))!
-  if (!closest) return;
+void print_connected_streets(
+    Street *head,
+    Street *closest) { // Busqueda lineal para calles conectadas(lab4) ¡(0(N))!
+  if (!closest)
+    return;
   printf("Closest street: %s\n", closest->name);
-  printf("Between %llu (%f, %f) and %llu (%f, %f)\n", closest->from_id, closest->from_pos.lat, closest->from_pos.lon, closest->to_id, closest->to_pos.lat, closest->to_pos.lon);
+  printf("Between %llu (%f, %f) and %llu (%f, %f)\n", closest->from_id,
+         closest->from_pos.lat, closest->from_pos.lon, closest->to_id,
+         closest->to_pos.lat, closest->to_pos.lon);
   printf("Connections:\n");
   Street *curr = head;
   int found = 0;
-  
+
   while (curr) {
     if (curr->from_id == closest->to_id) {
       printf(" - %s\n", curr->name);
       found = 1;
     }
     curr = curr->next;
-  }  
+  }
   if (!found) {
     printf(" - None\n");
   }
 }
 
-
 IntersectionMap *create_hash_map(int size) {
   IntersectionMap *map = malloc(sizeof(IntersectionMap));
   map->size = size;
-  map->buckets = malloc(sizeof(HashEntry*) * size);
+  map->buckets = malloc(sizeof(HashEntry *) * size);
   for (int i = 0; i < size; i++) {
     map->buckets[i] = NULL;
   }
@@ -322,11 +324,12 @@ int hash_function(unsigned long long id, int table_size) {
 }
 
 void insert_hash_map(IntersectionMap *map, Street *street) {
-  if (!street) return;
+  if (!street)
+    return;
   unsigned long long key = street->from_id;
   int index = hash_function(key, map->size);
-  
-  //Buscamos si la key ya existe en ese bucket
+
+  // Buscamos si la key ya existe en ese bucket
   HashEntry *curr_entry = map->buckets[index];
   while (curr_entry) {
     if (curr_entry->id == key) {
@@ -334,8 +337,8 @@ void insert_hash_map(IntersectionMap *map, Street *street) {
     }
     curr_entry = curr_entry->next;
   }
-  
-  //Si no existe la intersección en la tabla, creamos su entrada
+
+  // Si no existe la intersección en la tabla, creamos su entrada
   if (!curr_entry) {
     curr_entry = malloc(sizeof(HashEntry));
     curr_entry->id = key;
@@ -343,16 +346,17 @@ void insert_hash_map(IntersectionMap *map, Street *street) {
     curr_entry->next = map->buckets[index];
     map->buckets[index] = curr_entry;
   }
-  
-  //Añadimos la calle a la lista de adyacencia de esta intersección
+
+  // Añadimos la calle a la lista de adyacencia de esta intersección
   AdjNode *new_adj = malloc(sizeof(AdjNode));
   new_adj->street = street;
-  new_adj->next = curr_entry->head; 
+  new_adj->next = curr_entry->head;
 
   curr_entry->head = new_adj;
 }
 
-IntersectionMap *build_intersection_graph(Street *streets_head, int table_size) {
+IntersectionMap *build_intersection_graph(Street *streets_head,
+                                          int table_size) {
   IntersectionMap *map = create_hash_map(table_size);
   Street *curr = streets_head;
   while (curr) {
@@ -362,10 +366,15 @@ IntersectionMap *build_intersection_graph(Street *streets_head, int table_size) 
   return map;
 }
 
-void print_connected_streets_hash(IntersectionMap *map, Street *closest) {//Busqueda de conexions mes eficient ¡(O(1))!
-  if (!closest || !map) return;
+void print_connected_streets_hash(
+    IntersectionMap *map,
+    Street *closest) { // Busqueda de conexions mes eficient ¡(O(1))!
+  if (!closest || !map)
+    return;
   printf("Closest street: %s\n", closest->name);
-  printf("Between %llu (%f, %f) and %llu (%f, %f)\n", closest->from_id, closest->from_pos.lat, closest->from_pos.lon, closest->to_id, closest->to_pos.lat, closest->to_pos.lon);
+  printf("Between %llu (%f, %f) and %llu (%f, %f)\n", closest->from_id,
+         closest->from_pos.lat, closest->from_pos.lon, closest->to_id,
+         closest->to_pos.lat, closest->to_pos.lon);
   printf("Connections (Fast Hash):\n");
   unsigned long long key = closest->to_id;
   int index = hash_function(key, map->size);
@@ -387,10 +396,10 @@ void print_connected_streets_hash(IntersectionMap *map, Street *closest) {//Busq
   }
 }
 
-
-//Allibera la memoria ocupada pel hash map
+// Allibera la memoria ocupada pel hash map
 void free_hash_map(IntersectionMap *map) {
-  if (!map) return;
+  if (!map)
+    return;
   for (int i = 0; i < map->size; i++) {
     HashEntry *entry = map->buckets[i];
     while (entry) {
