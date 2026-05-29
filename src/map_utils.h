@@ -21,4 +21,5 @@ void insert_hash_map(IntersectionMap *map, Street *street);
 IntersectionMap *build_intersection_graph(Street *streets_head, int table_size);
 void print_connected_streets_hash(IntersectionMap *map, Street *closest);
 void free_hash_map(IntersectionMap *map);
+
 #endif
