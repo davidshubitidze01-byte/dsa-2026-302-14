@@ -135,7 +135,7 @@ ja que les comprovacions de visitats serien constants de mitjana.
 
 # 4. Estudi de latència: Cerca Seqüencial (Lab 4) vs. Hash Map (Lab 5)
 
-## 4.1. Metodologia i Dades Rogues (Raw Data)
+## 4.1.
 
 Per minimitzar interferències del sistema, s'ha mesurat el temps d'execució en microsegons utilitzant clock_gettime(CLOCK_MONOTONIC). Es fan 3 proves independents per a 4 mapes de mida progressiva, utilitzant l'opció 3 (Coordenades).
 
@@ -149,7 +149,7 @@ Per minimitzar interferències del sistema, s'ha mesurat el temps d'execució en
 ## 4.2. Anàlisi i Explicació dels Resultats
 
 
-### 1. Comportament del Lab 4 (Cerca Seqüencial - O(N)$
+### 1. Comportament del Lab 4: Cerca Seqüencial - O(N)
 Els resultats del Lab 4 mostren clarament com la latència depèn directament del volum de dades ($N$). 
 * En els mapes xs_` (13 carrers), md_1 (1.318 carrers) i lg_1 (3.797 carrers), els temps de cerca es mantenen en valors molt baixos i similars (entre 76.66 i 109). A aquestes escales tan petites, el temps d'execució està altament influenciat pel "soroll" del sistema operatiu (gestió de memòria cau, interrupcions de la CPU) més que no pas pel recorregut de la llista.
 * L'efecte de la complexitat lineal es fa totalment evident en fer el salt al mapa xl_1 (18.944 carrers). Aquí, el temps mitjà es dispara de manera contundent. El programa s'ha vist obligat a recórrer seqüencialment una llista enllaçada gairebé vint vegades més gran, fent salts de punter en memòria per a cada element, cosa que degrada el rendiment a mesura que el mapa creix.
@@ -164,32 +164,59 @@ Això es deu al fet que la funció de dispersió (hash function) calcula immedia
 ### Conclusió
 L'experiment mostra que per a mapes petits o mitjans la diferència és gairebé imperceptible. Tot i això, davant d'entorns realistes d'escala massiva, l'algorisme seqüencial del Lab 4 comença a perdre eficiència a ritme lineal, mentre que l'estructura de Taula Hash del Lab 5 garanteix una immediatesa absoluta (O(1)).
 
-# 5. Millora de l'estructura de nodes visitats a l'algorisme BFS
+# 5. Estudi de latència en rutes: BFS Seqüencial (Lab 4 style) vs. BFS amb Hash Map (Lab 5 style)
 
-### 5.1. Justificació
+## 5.1.
+
+Per analitzar l'impacte de la distància geomètrica en el càlcul de rutes complexes dalt de la topologia de grafs, s'ha utilitzat  el mapa d'escala real 2xl_. Com a node d'origen unificat per a tots els experiments s'ha fixat el Carrer de Felipe de Paz, 29.
+
+| Escenari | Distància ($m$) | Execució | Latència BFS Seqüencial (Lab 4) [microsegons] | Latència BFS Hash Map (Lab 5) [microsegons] 
+| :--- | :---: | :---: | :---: | :---: |
+| **Ruta Curta** <br> (Avinguda de Madrid, 120) | `347.60` | Exp 1 <br> Exp 2 <br> Exp 3 <br> **Mitjana** | `5379.00` <br> `5893.00` <br> `5300.00` <br> **`5524.00`** | `53.00` <br> `91.00` <br> `86.00` <br> **`76.67`** |
+| **Ruta Mitjana** <br> (Carrer de Plató, 13) | `2819.38` | Exp 1 <br> Exp 2 <br> Exp 3 <br> **Mitjana** | `266867.00` <br> `532606.00` <br> `276822.00` <br> **`358765.00`** | `8647.00` <br> `9665.00` <br> `9064.00` <br> **`9125.33`** |
+| **Ruta Llarga** <br> (Carrer de Roc Boronat, 114) | `6461.80` | Exp 1 <br> Exp 2 <br> Exp 3 <br> **Mitjana** | `717448.00` <br> `715133.00` <br> `702785.00` <br> **`711788.67`** | `50763.00` <br> `50699.00` <br> `50351.00` <br> **`50604.33`** |
+
+## 5.2. Anàlisi i Explicació dels Resultats
+
+### 1. Comportament del Càlcul de Ruta Seqüencial (Estil Lab 4)
+* Per a un desplaçament de 347,60 metres, el procés inverteix 5.524,00 
+* En saltar a una ruta metropolitana mitjana (2,81 km), la latència es multiplica abruptament assolint una mitjana de 358.765,00.
+* Fonalment, quan anem cap al Poblenou (6,46 km), aaribem a 711.788,67 microsegons.
+
+Aquesta penalització succeeix perquè la cerca BFS expandeix la seva exploració en cercles concèntrics. En la modalitat seqüencial, cada vegada que l'algorisme extreu una intersecció de la cua, es veu obligat a iterar íntegrament un bucle while sobre els 50.623 registres de la llista enllaçada de memòria. Com més allunyada es troba la destinació, el nombre de nodes de la cua que requereixen ser explorats s'incrementa exponencialment amb l'àrea d'influència, causant milions d'operacions de salt de punter.
+
+### 2. Comportament del Càlcul de Ruta amb Mapa d'Interseccions (Estil Lab 5)
+* La ruta cvurta es resol de forma instantània en només 76,67` (aproximadament unes 72 vegades més ràpid que el mètode del Lab 4).
+* Per a rutes llargues de 6,46 km, tot i el volum geogràfic d'interseccions intermèdies processades per traçar la ruta, el Hash Map conté el temps en uns operatius 50.604,33 (0,05 segons).
+
+Això respon al fet que la funció de dispersió aritmètica hash_function redueix la detecció de les vies adjacents d'un grup de carrers a un accés directe indexat de cost constant ideal. L'algorisme ja no necessita buscar seqüencialment dins dels 50.623 carrers de la base de dades; simplement computa el mòdul de la clau ID i salta de forma instantània al node d'adjacència.
+
+# 6. Millora de l'estructura de nodes visitats a l'algorisme BFS
+
+### 6.1. Justificació
 Actualment, l'algorisme de cerca utilitza una llista enllaçada simple (VisitedNode *visited) per emmagatzemar els identificadors de les interseccions ja explorades. Cada vegada que el BFS processa un node, crida a la funció is_visited(visited, id), la qual realitza un recorregut lineal de tota la llista per comprovar si l'ID ja existeix.
 
 Per millorar la latència, s'hauria de substituir aquesta llista per una Taula Hash de nodes visitats o bé utilitzar un vector d'estats booleans indexat directament per ID, o una Taula Hash amb encadenament similar a la que ja s'ha implementat per al graf (IntersectionMap). Com que els ID de les interseccions d'OpenStreetMap són enters molt grans , una Taula Hash optimitzada amb col·lisió per encadenament o sondeig obert és l'estructura ideal per fer cerques rapides.
 
-### 5.2. Complexitat algorísmica
+### 6.2. Complexitat algorísmica
 * **Complexitat temporal actual:** La comprovació amb is_visite` sobre la llista té un cost de **O(V)**, on V és el nombre de nodes visitats en aquell moment del camí. Considerant que aquesta comprovació es realitza per a cada element extret de la cua i per a cada una de les seves connexions, la complexitat del BFS es degrada en el pitjor dels casos a O(V^2), on V és el nombre total de vèrtexs del graf.
 * **Complexitat temporal millorada:** En utilitzar una Taula Hash de visitats, el cost de comprovar i afegir un element passa a ser de temps constant, O(1), en el cas mitjà. Això permet que l'algorisme BFS recuperi la seva complexitat òptima de O(V + E), on E és el nombre d'arestes (trams de carrer).
 
-### 5.3. Tradeoffs i desavantatges
+### 6.3. Tradeoffs i desavantatges
 * **Latència:** La latència es redueix molt, especialment en mapes de gran escala com xl_1, on els camins BFS exploren milers de nodes abans de trobar el destí.
 * **Memòria:** El principal desavantatge és l'increment en l'ús de memòria. Una llista enllaçada només allotja memòria per als nodes exactes que visita. Una taula Hash requereix reservar prèviament un espai de buckets buits (per exemple, proporcional a la mida del mapa) per minimitzar les col·lisions.
 
-# 6. Millora de l'algorisme de localització del tram de carrer més proper
+# 7. Millora de l'algorisme de localització del tram de carrer més proper
 
-### 6.1. Justificació
+### 7.1. Justificació
 Al codi, la funció find_closest_street(streets, user_pos) realitza una cerca lineal sobre tota la llista enllaçada de carrers carregats en memòria. Per a cada carrer, calcula el midpoint i la distància geomètrica haversine respecte a la posició de l'usuari per trobar el valor mínim.
 
 Per optimitzar aquesta operació espacial, s'hauria d'implementar un Arbre K-dimensional en dues dimensions o un R-Tree. Els K-D Trees són estructures de dades de divisió de l'espai de forma binària que permeten organitzar punts geomètrics de manera jeràrquica. En lloc de calcular distàncies de forma massiva a cegues, l'arbre permet descartar regions senceres de l'espai que estan massa allunyades de la coordenada de l'usuari,
 
-### 6.2. Complexitat algorísmica
+### 7.2. Complexitat algorísmica
 * **Complexitat temporal actual:** La funció actual té un cost de O(N), on N és el nombre total de trams de carrer del mapa. Per a mapes com xl_1 amb 18.944 carrers, fer aquest bucle sencer requereix computar milers de vegades operacions trigonomètriques molt costoses.
 * **Complexitat temporal millorada:** La cerca del veí més proper (Nearest Neighbor Search) en un k-d Tree equilibrat redueix el cost de temps a un nivell logarítmic O(log N) en el cas mitjà.
 
-### 6.3. Tradefofs  i desavantatges
+### 7.3. Tradefofs  i desavantatges
 * **Latència:** La reducció de la latència és extrema en el moment d'iniciar la ruta. Passar de prop de 19.000 càlculs trigonomètrics del haversine a només uns 14 o 15 passos (on vas dividintl nombre de carrers entre 2 consecutivament) fa que la localització inicial passi de mil·lisegons a microsegons imperceptibles.
 * **Memòria i Cost de Construcció:** El desavantatge d'aquesta solució és la complexitat d'implementació en C i el cost de temps requerit per inicialitzar i equilibrar l'arbre en el moment de carregar el mapa. L'estructura de l'arbre també afegeix un sobrecost en memòria degut als múltiples punters fills de cada node.
