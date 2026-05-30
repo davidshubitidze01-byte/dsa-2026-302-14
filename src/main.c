@@ -227,14 +227,31 @@ int main() {
         Street *dest_closest = find_closest_street(streets, dest_pos);
         if (dest_closest) {
           printf("Closest street: %s\n", dest_closest->name);
-          printf("Between %llu (%f, %f) and %llu (%f, %f)\n", dest_closest->from_id, dest_closest->from_pos.lat, dest_closest->from_pos.lon, dest_closest->to_id, dest_closest->to_pos.lat, dest_closest->to_pos.lon);
+          double distance_meters = haversine(origin_pos, dest_pos);
 
-          // BFS
-          PathNode *route = bfs_pathfinding(map, closest, dest_closest);
-          print_route_directions(route, dest_closest);
-          // Liberamos la memoria del camino encontrado
-          void free_path_list(PathNode * head);
-          free_path_list(route);
+          struct timespec path_start, path_end;
+          double time_path_sequential;
+          clock_gettime(CLOCK_MONOTONIC, &path_start);
+          PathNode *route_seq = bfs_pathfinding_sequential(streets, closest, dest_closest);
+          clock_gettime(CLOCK_MONOTONIC, &path_end);
+          
+          time_path_sequential = (path_end.tv_sec - path_start.tv_sec) * 1000000.0 + (path_end.tv_nsec - path_start.tv_nsec) / 1000.0;
+          
+          if (route_seq) free_path_list(route_seq);
+          double time_path_hash;
+          
+          clock_gettime(CLOCK_MONOTONIC, &path_start);
+          PathNode *route_hash = bfs_pathfinding(map, closest, dest_closest);
+          clock_gettime(CLOCK_MONOTONIC, &path_end);
+          
+          time_path_hash = (path_end.tv_sec - path_start.tv_sec) * 1000000.0 + (path_end.tv_nsec - path_start.tv_nsec) / 1000.0;
+
+          printf("Distancia: %.2f\n", distance_meters);
+          printf("Latencia Camino Secuencial: %.2f\n", time_path_sequential);
+          printf("Latencia Camino Hash Map:    %.2f\n", time_path_hash);
+
+          print_route_directions(route_hash, dest_closest);
+          if (route_hash) free_path_list(route_hash);
         }
       }
     }

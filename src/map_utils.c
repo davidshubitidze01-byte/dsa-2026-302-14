@@ -644,3 +644,79 @@ void print_route_directions(PathNode *path_head, Street *dest_street) {
     curr = segment;
   }
 }
+
+PathNode *bfs_pathfinding_sequential(Street *streets_head, Street *start_street, Street *target_street) {
+    if (!streets_head || !start_street || !target_street) return NULL;
+    
+    if (start_street->to_id == target_street->to_id || strcmp(start_street->name, target_street->name) == 0) {
+        PathNode *p = malloc(sizeof(PathNode));
+        p->street = start_street;
+        p->next = NULL;
+        return p;
+    }
+    Queue q = {NULL, NULL};
+    VisitedNode *visited = NULL;
+
+    QueueNode *init_q = malloc(sizeof(QueueNode));
+    init_q->path_head = malloc(sizeof(PathNode));
+    init_q->path_head->street = start_street;
+    init_q->path_head->next = NULL;
+    init_q->last_street = start_street;
+    init_q->next = NULL;
+    q.front = q.rear = init_q;
+    PathNode *solution = NULL;
+    while (q.front != NULL) {
+        QueueNode *curr_q = q.front;
+        q.front = q.front->next;
+        if (!q.front) q.rear = NULL;
+        PathNode *path = curr_q->path_head;
+        Street *current_street = curr_q->last_street;
+        free(curr_q);
+
+        unsigned long long current_intersection = current_street->to_id;
+
+        if (current_intersection == target_street->from_id || current_intersection == target_street->to_id) {
+            solution = path;
+            while (q.front) {
+                QueueNode *tmp = q.front;
+                q.front = q.front->next;
+                free_path_list(tmp->path_head);
+                free(tmp);
+            }
+            break;
+        }
+
+        if (!is_visited(visited, current_intersection)) {
+            add_visited(&visited, current_intersection);
+            Street *curr_s = streets_head;
+            while (curr_s) {
+                if (curr_s->from_id == current_intersection) {
+                    if (!is_visited(visited, curr_s->to_id)) {
+                        PathNode *last_s = NULL;
+                        PathNode *new_path = clone_path(path, &last_s);
+                        PathNode *new_segment = malloc(sizeof(PathNode));
+                        new_segment->street = curr_s;
+                        new_segment->next = NULL;
+                        if (last_s) last_s->next = new_segment;
+                        else new_path = new_segment;
+
+                        QueueNode *new_q_node = malloc(sizeof(QueueNode));
+                        new_q_node->path_head = new_path;
+                        new_q_node->last_street = curr_s;
+                        new_q_node->next = NULL;
+                        if (!q.rear) {
+                            q.front = q.rear = new_q_node;
+                        } else {
+                            q.rear->next = new_q_node;
+                            q.rear = new_q_node;
+                        }
+                    }
+                }
+                curr_s = curr_s->next;
+            }
+        }
+        free_path_list(path);
+    }
+    free_visited(visited);
+    return solution;
+}

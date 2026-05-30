@@ -26,4 +26,5 @@ void run_navigation(IntersectionMap *map, Street *streets_all, House *houses, Pl
 PathNode *bfs_pathfinding(IntersectionMap *map, Street *start_street, Street *target_street);
 void print_route_directions(PathNode *path_head, Street *dest_street);
 void free_path_list(PathNode *head);
+PathNode *bfs_pathfinding_sequential(Street *streets_head, Street *start_street, Street *target_street);
 #endif
