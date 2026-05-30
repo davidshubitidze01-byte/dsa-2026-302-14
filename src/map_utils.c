@@ -417,3 +417,230 @@ void free_hash_map(IntersectionMap *map) {
   free(map->buckets);
   free(map);
 }
+
+// Latitud/longitud a X/Y
+void latlon_to_xy(double lat_ref, double lon_ref, double lat, double lon,
+                  double *x, double *y) {
+  double lat_ref_rad = toRadians(lat_ref);
+  double dlat = toRadians(lat - lat_ref);
+  double dlon = toRadians(lon - lon_ref);
+  *x = EARTH_RADIUS * dlon * cos(lat_ref_rad) * 1000.0;
+  *y = EARTH_RADIUS * dlat * 1000.0;
+}
+
+// Gestiona la lista de visitados en el BFS
+int is_visited(VisitedNode *head, unsigned long long id) {
+  VisitedNode *curr = head;
+  while (curr) {
+    if (curr->id == id)
+      return 1;
+    curr = curr->next;
+  }
+  return 0;
+}
+
+void add_visited(VisitedNode **head, unsigned long long id) {
+  VisitedNode *new_node = malloc(sizeof(VisitedNode));
+  new_node->id = id;
+  new_node->next = *head;
+  *head = new_node;
+}
+
+void free_visited(VisitedNode *head) {
+  while (head) {
+    VisitedNode *tmp = head;
+    head = head->next;
+    free(tmp);
+  }
+}
+
+// Duplica una Pathnode para meterla en la QUEUE
+PathNode *clone_path(PathNode *head, PathNode **last_out) {
+  if (!head) {
+    *last_out = NULL;
+    return NULL;
+  }
+  PathNode *new_head = malloc(sizeof(PathNode));
+  new_head->street = head->street;
+  new_head->next = NULL;
+  PathNode *curr = head->next;
+  PathNode *prev = new_head;
+  while (curr) {
+    PathNode *new_node = malloc(sizeof(PathNode));
+    new_node->street = curr->street;
+    new_node->next = NULL;
+    prev->next = new_node;
+    prev = new_node;
+    curr = curr->next;
+  }
+  *last_out = prev;
+  return new_head;
+}
+
+void free_path_list(PathNode *head) {
+  while (head) {
+    PathNode *tmp = head;
+    head = head->next;
+    free(tmp);
+  }
+}
+
+// BFS para buscar el camino entre dos tramos
+PathNode *bfs_pathfinding(IntersectionMap *map, Street *start_street,
+                          Street *target_street) {
+  if (!map || !start_street || !target_street)
+    return NULL;
+  // Si ya estamos en la misma calle destino
+  if (start_street->to_id == target_street->to_id ||
+      strcmp(start_street->name, target_street->name) == 0) {
+    PathNode *p = malloc(sizeof(PathNode));
+    p->street = start_street;
+    p->next = NULL;
+    return p;
+  }
+  Queue q = {NULL, NULL};
+  VisitedNode *visited = NULL;
+
+  // Inicializar la cola con start_street
+  QueueNode *init_q = malloc(sizeof(QueueNode));
+  init_q->path_head = malloc(sizeof(PathNode));
+  init_q->path_head->street = start_street;
+  init_q->path_head->next = NULL;
+  init_q->last_street = start_street;
+  init_q->next = NULL;
+  q.front = q.rear = init_q;
+  PathNode *solution = NULL;
+
+  while (q.front != NULL) {
+    QueueNode *curr_q = q.front; // dequeue
+    q.front = q.front->next;
+    if (!q.front)
+      q.rear = NULL;
+    PathNode *path = curr_q->path_head;
+    Street *current_street = curr_q->last_street;
+    free(curr_q);
+
+    unsigned long long current_intersection = current_street->to_id;
+
+    // Si hemos llegado a la intersección de destino o a la calle de destino
+    if (current_intersection == target_street->from_id ||
+        current_intersection == target_street->to_id) {
+      solution = path;
+      while (q.front) {
+        QueueNode *tmp = q.front;
+        q.front = q.front->next;
+        free_path_list(tmp->path_head);
+        free(tmp);
+      }
+      break;
+    }
+    if (!is_visited(visited, current_intersection)) {
+      add_visited(&visited, current_intersection);
+
+      // Buscar calles conectadas en la hash tavle
+      int index = hash_function(current_intersection, map->size);
+      HashEntry *entry = map->buckets[index];
+      while (entry) {
+        if (entry->id == current_intersection)
+          break;
+        entry = entry->next;
+      }
+      if (entry && entry->head) {
+        AdjNode *curr_adj = entry->head;
+        while (curr_adj) {
+          Street *connected_street = curr_adj->street;
+          if (!is_visited(visited, connected_street->to_id)) {
+            // Clonar camino actual y añadir la nueva calle
+            PathNode *last_s = NULL;
+            PathNode *new_path = clone_path(path, &last_s);
+            PathNode *new_segment = malloc(sizeof(PathNode));
+            new_segment->street = connected_street;
+            new_segment->next = NULL;
+            if (last_s)
+              last_s->next = new_segment;
+            else
+              new_path = new_segment;
+            // Enqueue
+            QueueNode *new_q_node = malloc(sizeof(QueueNode));
+            new_q_node->path_head = new_path;
+            new_q_node->last_street = connected_street;
+            new_q_node->next = NULL;
+            if (!q.rear) {
+              q.front = q.rear = new_q_node;
+            } else {
+              q.rear->next = new_q_node;
+              q.rear = new_q_node;
+            }
+          }
+          curr_adj = curr_adj->next;
+        }
+      }
+    }
+    free_path_list(path); // Liberamos el camino procesado si no es la solución
+  }
+  free_visited(visited);
+  return solution;
+}
+
+// Determina el giro usando el producto vectorial
+// Retorna 1 si es iezquierda (> 0), -1 si es Derecha (< 0), 0 si es recto
+int get_turn_direction(Street *ab, Street *bc) {
+  Position ref = ab->from_pos; // Usamos ab->from_pos como referencia local de
+                               // coordenadas (0,0)
+  double ax, ay, bx, by, cx, cy;
+
+  latlon_to_xy(ref.lat, ref.lon, ab->from_pos.lat, ab->from_pos.lon, &ax, &ay);
+  latlon_to_xy(ref.lat, ref.lon, ab->to_pos.lat, ab->to_pos.lon, &bx, &by);
+  latlon_to_xy(ref.lat, ref.lon, bc->to_pos.lat, bc->to_pos.lon, &cx, &cy);
+
+  double cross_product = (bx - ax) * (cy - by) - (by - ay) * (cx - bx);
+
+  if (cross_product > 0.01)
+    return 1; // Izquierda
+  if (cross_product < -0.01)
+    return -1; // Derecha
+  return 0;    // Recto
+}
+
+// Imprime las direcciones
+void print_route_directions(PathNode *path_head, Street *dest_street) {
+  if (!path_head) {
+    printf("\n--- ROUTE ---\nNo path found via BFS.\n");
+    return;
+  }
+  printf("\n--- ROUTE ---\n");
+  printf("Start at %s\n", path_head->street->name);
+
+  PathNode *curr = path_head;
+
+  while (curr) {
+    char current_street_name[100];
+    strcpy(current_street_name, curr->street->name);
+    double accumulated_length = 0;
+    // Agrupamos tramos que pertenezcan a la misma calle de manera contigua
+    PathNode *segment = curr;
+    while (segment && strcmp(segment->street->name, current_street_name) == 0) {
+      accumulated_length += segment->street->length;
+      segment = segment->next;
+    }
+
+    // Si hay un siguiente tramo de otra calle, calculamos el giro hacia ahí
+    if (segment) {
+      int turn = get_turn_direction(curr->street, segment->street);
+      if (turn > 0) {
+        printf("Turn left to %s and continue for %.0fm\n",
+               segment->street->name, accumulated_length);
+      } else if (turn < 0) {
+        printf("Turn right to %s and continue for %.0fm\n",
+               segment->street->name, accumulated_length);
+      } else {
+        printf("Continue straight to %s for %.0fm\n", segment->street->name,
+               accumulated_length);
+      }
+    } else {
+      // Último tramo del recorrido
+      printf("You have arrived to %s\n", dest_street->name);
+    }
+    curr = segment;
+  }
+}

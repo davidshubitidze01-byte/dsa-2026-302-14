@@ -147,8 +147,115 @@ int main() {
       printf("Map size (Streets):  %d\n", s_cnt);
       printf("Latencia Lab 4: %.2f microsegons\n", time_lab4);
       printf("Latencia Lab 5:   %.2f microsegons\n", time_lab5);
+
+      // Lab 6
+      int opt_d;
+      Position dest_pos;
+      int valid_dest = 0;
+
+      printf("\n--- DESTINATION ---\nWhere do you want to go? Address (1), "
+             "Place (2) or Coordinate (3)? ");
+      scanf("%d", &opt_d);
+      while (getchar() != '\n')
+        ;
+
+      if (opt_d == 1) {
+        printf("Enter street name: ");
+        fgets(street, 100, stdin);
+        street[strcspn(street, "\n")] = 0;
+        printf("Enter street number: ");
+        scanf("%d", &num);
+        House *h_d = find_house(houses, street, num);
+        if (h_d) {
+          printf("Found at (%f, %f)\n", h_d->pos.lat, h_d->pos.lon);
+          dest_pos = h_d->pos;
+          valid_dest = 1;
+        } else {
+          total_nums = 0;//Si la calle existe pero el número es inválido
+          valid_nums = get_valid_numbers(houses, street, &total_nums);
+          if (total_nums > 0) {
+            printf("Street found, but number %d is invalid. Valid numbers:\n", num);
+            for (int i = 0; i < total_nums; i++)
+              printf("%d ", valid_nums[i]);
+            printf("\nEnter a valid number: ");
+            scanf("%d", &num);
+            h_d = find_house(houses, street, num);
+            if (h_d) {
+              printf("Found at (%f, %f)\n", h_d->pos.lat, h_d->pos.lon);
+              dest_pos = h_d->pos;
+              valid_dest = 1;
+            }
+          } else {
+            //Si la calle no existe, sugerimos la más parecida usando levenshtein:
+            printf("Street not found. Did you mean?: ");
+            curr = houses;
+            best_match = NULL;
+            min_dist = 999;
+            while (curr) {
+              int d = levenshtein(street, curr->street);
+              if (d < min_dist) {
+                min_dist = d;
+                best_match = curr->street;
+              }
+              curr = curr->next;
+            }
+            if (best_match)
+              printf("%s?\n", best_match);
+          }
+          free(valid_nums);
+        }
+      } else if (opt_d == 2) {
+        printf("Enter place name: ");
+        fgets(p_name, 100, stdin);
+        p_name[strcspn(p_name, "\n")] = 0;
+        Place *p_d = find_place(places, p_name);
+        if (!p_d) {
+          sprintf(p_name_guions, "\"%s\"", p_name);
+          p_d = find_place(places, p_name_guions);
+        }
+        if (p_d) {
+          printf("Found at (%f, %f)\n", p_d->pos.lat, p_d->pos.lon);
+          dest_pos = p_d->pos;
+          valid_dest = 1;
+        }
+      } else if (opt_d == 3) {
+        printf("Enter latitude and longitude: ");
+        scanf("%lf %lf", &dest_pos.lat, &dest_pos.lon);
+        valid_dest = 1;
+      }
+      if (valid_dest) {
+        Street *dest_closest = find_closest_street(streets, dest_pos);
+        if (dest_closest) {
+          printf("Closest street: %s\n", dest_closest->name);
+          printf("Between %llu (%f, %f) and %llu (%f, %f)\n", dest_closest->from_id, dest_closest->from_pos.lat, dest_closest->from_pos.lon, dest_closest->to_id, dest_closest->to_pos.lat, dest_closest->to_pos.lon);
+
+          // BFS
+          PathNode *route = bfs_pathfinding(map, closest, dest_closest);
+          print_route_directions(route, dest_closest);
+          // Liberamos la memoria del camino encontrado
+          void free_path_list(PathNode * head);
+          free_path_list(route);
+        }
+      }
     }
   }
+
+  while (houses) {
+    House *t = houses;
+    houses = houses->next;
+    free(t);
+  }
+  while (places) {
+    Place *t = places;
+    places = places->next;
+    free(t);
+  }
+  while (streets) {
+    Street *t = streets;
+    streets = streets->next;
+    free(t);
+  }
+
   if (map) {
     free_hash_map(map);
   }

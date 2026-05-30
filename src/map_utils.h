@@ -23,5 +23,7 @@ void print_connected_streets_hash(IntersectionMap *map, Street *closest);
 void free_hash_map(IntersectionMap *map);
 void latlon_to_xy(double lat_ref, double lon_ref, double lat, double lon, double *x, double *y);
 void run_navigation(IntersectionMap *map, Street *streets_all, House *houses, Place *places);
-
+PathNode *bfs_pathfinding(IntersectionMap *map, Street *start_street, Street *target_street);
+void print_route_directions(PathNode *path_head, Street *dest_street);
+void free_path_list(PathNode *head);
 #endif

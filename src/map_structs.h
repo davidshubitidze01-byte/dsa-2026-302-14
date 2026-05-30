@@ -50,29 +50,29 @@ typedef struct {
   int size;
 } IntersectionMap;
 
-//Almacena un camino en el bFS
+// Almacena un camino en el bFS
 typedef struct PathNode {
-    Street *street;
-    struct PathNode *next;
+  Street *street;
+  struct PathNode *next;
 } PathNode;
 
-//Nodo de la cola que contiene un camino completo
+// Nodo de la cola que contiene un camino completo
 typedef struct QueueNode {
-    PathNode *path_head;
-    Street *last_street;
-    struct QueueNode *next;
+  PathNode *path_head;
+  Street *last_street;
+  struct QueueNode *next;
 } QueueNode;
 
-//Cola del bFS
+// Cola del bFS
 typedef struct {
-    QueueNode *front;
-    QueueNode *rear;
+  QueueNode *front;
+  QueueNode *rear;
 } Queue;
 
-//Elementos visitados
+// Elementos visitados
 typedef struct VisitedNode {
-    unsigned long long id;
-    struct VisitedNode *next;
+  unsigned long long id;
+  struct VisitedNode *next;
 } VisitedNode;
 
 #endif
