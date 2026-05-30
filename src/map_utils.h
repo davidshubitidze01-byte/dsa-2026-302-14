@@ -21,5 +21,7 @@ void insert_hash_map(IntersectionMap *map, Street *street);
 IntersectionMap *build_intersection_graph(Street *streets_head, int table_size);
 void print_connected_streets_hash(IntersectionMap *map, Street *closest);
 void free_hash_map(IntersectionMap *map);
+void latlon_to_xy(double lat_ref, double lon_ref, double lat, double lon, double *x, double *y);
+void run_navigation(IntersectionMap *map, Street *streets_all, House *houses, Place *places);
 
 #endif
